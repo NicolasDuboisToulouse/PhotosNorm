@@ -301,6 +301,24 @@ sub auto_rotate
 }
 
 
+#
+# Set correct access rights (Linux only).
+# return:
+# 0 - Error, no change
+# 1 - access rights changed to 0644
+# 2 - no change (access rights ok or Windows OS)
+#
+sub update_access_rights
+{
+    my ($self) = @_;
+    return 2 if ($^O eq 'MSWin32');
+    my $fileperm = $self->{exif_tools}->GetValue('File:FilePermissions', 'Raw') & 07777;
+    return 2 if ($fileperm == 0644);
+    chmod(0644, $self->{file});
+    return 1;
+}
+
+
 
 #
 # Read tags. Return 0 on error.
