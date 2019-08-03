@@ -8,6 +8,8 @@ package PhotosNorm::ImageTag;
 use strict;
 use warnings;
 use Image::ExifTool;
+use Image::JpegTran;
+use File::Copy qw(copy);
 use POSIX qw(mktime);
 
 
@@ -134,12 +136,12 @@ sub crop_height
 #
 # $taget_file is optional.
 # if defined :
-#  - The $target_file shall not exists
-#  - The $target_file content will be copied from file used to load tags,
-#  - Current tags will not be modified (a new call to save() will return the same bitset)
+#  - The $target_file shall not exists,
+#  - The $target_file content will be filed with file used to load tags and their modifications,
+#  - Current tags will not be modified (a new call to save() will return the same bitset).
 # else :
-#  - Tags will be writed to file used to load tags.
-#  - Tags will be re-loaded (a new call to save() will return 0)
+#  - Tags will be writed to file used to load tags,
+#  - Tags will be re-loaded (a new call to save() will return 0).
 #
 #
 sub save
@@ -224,12 +226,80 @@ sub save
         $updated_tags |= TAG_CROP;
     }
 
-
+    # Save file
     return undef if (! $self->{exif_tools}->WriteInfo($self->{file}, $target_file));
     $self->_read_exif_tags() if (!$target_file);
-    
+
     return $updated_tags;
 }
+
+
+#
+# Rotate image according to EXIF rotation tag.
+# Only works for jpeg files.
+# Return:
+# 0 - error, no change(not a jpeg, invalid exif oritentation or not rw),
+# 1 - Image rotated and orientation tag updated,
+# 2 - No change (orientation is good or EXIF tag not found).
+#
+# Note: modified tags are not saved to the file.
+#       You still need to call 'save'.
+#
+sub auto_rotate
+{
+    my ($self) = @_;
+
+    # Use a temp file in the same folder.
+    my $tmp_file = $self->{file} . '_ImgTag_Rotate_TMP_';
+
+    my $result = (sub {
+
+        # Remove existing temp file
+        if (-e $tmp_file) { return 0 if !unlink($tmp_file); }
+
+        # Load orientation
+        return 0 if ($self->{exif_tools}->GetValue('MIMEType') ne 'image/jpeg');
+        my $orientation = $self->{exif_tools}->GetValue('Orientation', 'Raw');
+        return 2 if (!defined($orientation) || $orientation eq '1');
+
+        # Compute transformation
+        my $transform = undef;
+        if    ($orientation eq '2') { $transform = [flip => 'horizontal']; }
+        elsif ($orientation eq '3') { $transform = [rotate => 180];        }
+        elsif ($orientation eq '4') { $transform = [flip => 'vertical'];   }
+        elsif ($orientation eq '5') { $transform = ['transpose' => 1];     }
+        elsif ($orientation eq '6') { $transform = [rotate => 90];         }
+        elsif ($orientation eq '7') { $transform = ['transverse' => 1];    }
+        elsif ($orientation eq '8') { $transform = [rotate => 270];        }
+        else {return 0;} # invalid orientation.
+
+        # Rotate
+        jpegtran($self->{file} => $tmp_file, @$transform, copy => 'all');
+        return 0 if (! -s $tmp_file);
+
+        # Update Tags (Exif dimensions are modified by jpegtran but not orientation)
+        my $exif_tool = new Image::ExifTool;
+        $exif_tool->Options(Unknown => 1, Charset => 'UTF8');
+        $exif_tool->ExtractInfo($tmp_file);
+        $exif_tool->SetNewValue('Orientation' => 1, Type => 'Raw');
+        $exif_tool->SetNewValue('IFD1:Orientation'); # Delete if exists
+        return 0 if !$exif_tool->WriteInfo($tmp_file);
+
+        # Overwrite source file
+        return 0 if !copy($tmp_file, $self->{file});
+
+        # Update internal data
+        $self->{exif_tools}->ExtractInfo($self->{file});
+        $self->{width} = $self->_read_exif_tag_int('ImageWidth');
+        $self->{height} = $self->_read_exif_tag_int('ImageHeight');
+
+        return 1;
+                  })->();
+
+    unlink($tmp_file);
+    return $result;
+}
+
 
 
 #
@@ -248,7 +318,7 @@ sub _read_exif_tags
     return 0 if ($exif_tool->GetValue('MIMEType') !~ /^image/);
 
     $self->{exif_tools} = $exif_tool;
-        
+
     # Read dimension from file header (not from tag informations)
     $self->{width} = $self->_read_exif_tag_int('ImageWidth');
     $self->{height} = $self->_read_exif_tag_int('ImageHeight');
@@ -278,7 +348,7 @@ sub _read_exif_tags
     my $make = $self->_read_exif_tag('Make') || '';
     my $model = $self->_read_exif_tag('Model') || '';
     my $soft = $self->_read_exif_tag('Software');
-    $self->{camera_infos}->{camera} = $make . (($make ne '' && $model ne '')? ' ': '') . 
+    $self->{camera_infos}->{camera} = $make . (($make ne '' && $model ne '')? ' ': '') .
         $model .  (($soft)? " ($soft)" : '');
     if (!$self->{camera_infos}->{camera}) {
         $self->{camera_infos}->{camera} = 'Unknown';
@@ -286,41 +356,41 @@ sub _read_exif_tags
 
     #Get exposure
     $self->{camera_infos}->{exposure} =
-        $self->_read_exif_tag('ExposureTime') || 
-        $self->_read_exif_tag('ShutterSpeed') || 
+        $self->_read_exif_tag('ExposureTime') ||
+        $self->_read_exif_tag('ShutterSpeed') ||
         $self->_read_exif_tag('ShutterSpeedValue') ||
         'Unknown';
 
 
     #Get aperture
     $self->{camera_infos}->{aperture} =
-        $self->_read_exif_tag('FNumber') || 
-        $self->_read_exif_tag('Aperture') || 
-        $self->_read_exif_tag('LensAperture') || 
-        $self->_read_exif_tag('ApertureValue') || 
+        $self->_read_exif_tag('FNumber') ||
+        $self->_read_exif_tag('Aperture') ||
+        $self->_read_exif_tag('LensAperture') ||
+        $self->_read_exif_tag('ApertureValue') ||
         'Unknown';
 
 
     #Get Exposure Bias
-    $self->{camera_infos}->{exposure_bias} = 
+    $self->{camera_infos}->{exposure_bias} =
         $self->_read_exif_tag('ExposureCompensation');
     $self->{camera_infos}->{exposure_bias} = 'Unknown'
         if (! defined($self->{camera_infos}->{exposure_bias}));
 
     #Get ISO
-    $self->{camera_infos}->{iso} = 
+    $self->{camera_infos}->{iso} =
         $self->_read_exif_tag('ISO') ||
-        'Unknown';        
-    
+        'Unknown';
+
     #Get Focale
-    $self->{camera_infos}->{focal} = 
+    $self->{camera_infos}->{focal} =
         $self->_read_exif_tag('FocalLength') ||
-        'Unknown';        
-    
+        'Unknown';
+
     #Get Flash
-    $self->{camera_infos}->{flash} = 
+    $self->{camera_infos}->{flash} =
         $self->_read_exif_tag('Flash') ||
-        'Unknown';  
+        'Unknown';
 
     1;
 }
