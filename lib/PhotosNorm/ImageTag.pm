@@ -36,7 +36,7 @@ sub new
 
     my $self = bless( { file => $file }, $pkg );
 
-    return undef if (!$self->_read_exif_tags());
+    return undef if (!$self->_load());
 
     return $self;
 }
@@ -228,7 +228,7 @@ sub save
 
     # Save file
     return undef if (! $self->{exif_tools}->WriteInfo($self->{file}, $target_file));
-    $self->_read_exif_tags() if (!$target_file);
+    $self->_load() if (!$target_file);
 
     return $updated_tags;
 }
@@ -278,9 +278,7 @@ sub auto_rotate
         return 0 if (! -s $tmp_file);
 
         # Update Tags (Exif dimensions are modified by jpegtran but not orientation)
-        my $exif_tool = new Image::ExifTool;
-        $exif_tool->Options(Unknown => 1, Charset => 'UTF8');
-        $exif_tool->ExtractInfo($tmp_file);
+        my $exif_tool = _new_exif_tool($tmp_file) or return 0;
         $exif_tool->SetNewValue('Orientation' => 1, Type => 'Raw');
         $exif_tool->SetNewValue('IFD1:Orientation'); # Delete if exists
         return 0 if !$exif_tool->WriteInfo($tmp_file);
@@ -319,28 +317,57 @@ sub update_access_rights
 }
 
 
+#
+# Copy tags from $from_file to $self.
+# Existing tags in $self that are not present in $from_file will be
+# preserved unless you set $erase_all flag.
+#
+# ! All modified tags will be lost !
+#
+# You need to call save() after this function.
+# The save() function may save much more tags than the ones used by this class.
+#
+sub copy_tags_from_file
+{
+    my ($self, $from_file, $erase_all) = @_;
+
+    # Check validty of $from_file
+    _new_exif_tool($from_file) or return 0;
+
+    $self->{exif_tools}->SetNewValue('*') if ($erase_all);
+    $self->{exif_tools}->SetNewValuesFromFile($from_file, '*:*');
+
+    $self->_read_exif_tags();
+
+    return 1;
+}
+
 
 #
-# Read tags. Return 0 on error.
-# This function will overwrite all readed tags.
+# Load file and fill internal data.
+# return 0 on errors.
+# This function will overwrite all internal data.
+#
+sub _load
+{
+    my ($self) = @_;
+    $self->{exif_tools} = _new_exif_tool($self->{file}) or return 0;
+    $self->_read_exif_tags();
+    return 1;
+}
+
+
+#
+# Fill internal data from internal exif_tools.
+# This function will overwrite all internal data.
 #
 sub _read_exif_tags
 {
     my ($self) = @_;
 
-    # Load tags
-    my $exif_tool = new Image::ExifTool;
-    $exif_tool->Options(Unknown => 1, Charset => 'UTF8');
-
-    return 0 if (!$exif_tool->ExtractInfo($self->{file}));
-    return 0 if ($exif_tool->GetValue('MIMEType') !~ /^image/);
-
-    $self->{exif_tools} = $exif_tool;
-
     # Read dimension from file header (not from tag informations)
     $self->{width} = $self->_read_exif_tag_int('ImageWidth');
     $self->{height} = $self->_read_exif_tag_int('ImageHeight');
-    return 0 if (!$self->{width} || !$self->{height});
 
     # Read date. Check several fields because some camera doesn't follow EXIF standard
     my $date = $self->_read_exif_tag('DateTimeOriginal');
@@ -409,11 +436,7 @@ sub _read_exif_tags
     $self->{camera_infos}->{flash} =
         $self->_read_exif_tag('Flash') ||
         'Unknown';
-
-    1;
 }
-
-
 
 #
 # Read a tag. Return undef if tag not set.
@@ -436,6 +459,29 @@ sub _read_exif_tag_int
     my $value = $self->_read_exif_tag($tag_name);
     return int($value) if (defined($value));
     return undef;
+}
+
+#
+# (static)
+# Create a new exifTool object for an image.
+# Return the exifTool object or undef on error.
+# If $file in not a valid image, it is an error.
+#
+sub _new_exif_tool
+{
+    my $file = shift;
+    $file = shift if ($file->isa((caller())[0]));  # function not called as static one
+
+    my $exif_tool = new Image::ExifTool;
+    $exif_tool->Options(Unknown => 1, Charset => 'UTF8');
+
+    return undef if (!$exif_tool->ExtractInfo($file));
+
+    return undef if ($exif_tool->GetValue('MIMEType') !~ /^image/);
+    return undef if (!$exif_tool->GetValue('ImageWidth'));
+    return undef if (!$exif_tool->GetValue('ImageHeight'));
+
+    return $exif_tool;
 }
 
 1;
