@@ -17,12 +17,13 @@ use POSIX qw(mktime);
 # Tags properties.
 #
 use constant {
-    TAG_NONE       => 0,
-    TAG_DIMENSIONS => 1,
-    TAG_DATE       => 2,
-    TAG_TITLE      => 4,
-    TAG_COMMENT    => 8,
-    TAG_CROP       => 16,
+    TAG_FAILURE    => 0,
+    TAG_NONE       => 1,
+    TAG_DIMENSIONS => 2,
+    TAG_DATE       => 4,
+    TAG_TITLE      => 8,
+    TAG_COMMENT    => 16,
+    TAG_CROP       => 32,
 };
 
 
@@ -131,8 +132,9 @@ sub crop_height
 
 #
 # Save modified tags.
-# On success, return a bitset of TAG_* constants.
-# On failure, return undef.
+# On failure, return 0 (TAG_FAILURE).
+# On success, return a bitset of TAG_* constants. return 1 (TAG_NONE) if no changes made.
+#
 #
 # $taget_file is optional.
 # if defined :
@@ -227,7 +229,7 @@ sub save
     }
 
     # Save file
-    return undef if (! $self->{exif_tools}->WriteInfo($self->{file}, $target_file));
+    return TAG_FAILURE if (! $self->{exif_tools}->WriteInfo($self->{file}, $target_file));
     $self->_load() if (!$target_file);
 
     return $updated_tags;
