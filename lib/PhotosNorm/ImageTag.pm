@@ -132,7 +132,7 @@ sub crop_height
 
 #
 # Save modified tags.
-# On failure, return 0 (TAG_FAILURE).
+# On failure, return 0 (TAG_FAILURE). If you don't have specify a target file, the original one might be corrupted!
 # On success, return a bitset of TAG_* constants. return 1 (TAG_NONE) if no changes made.
 #
 #
@@ -230,7 +230,9 @@ sub save
 
     # Save file
     return TAG_FAILURE if (! $self->{exif_tools}->WriteInfo($self->{file}, $target_file));
-    $self->_load() if (!$target_file);
+    if (!$target_file) {
+        return TAG_FAILURE if (! $self->_load());
+    }
 
     return $updated_tags;
 }
