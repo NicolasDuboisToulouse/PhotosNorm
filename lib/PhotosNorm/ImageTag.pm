@@ -330,10 +330,9 @@ sub update_access_rights
 # Existing tags in $self that are not present in $from_file will be
 # preserved unless you set $erase_all flag.
 #
-# ! All modified tags will be lost !
+# All tags modified by accessors like date() will be lost !
 #
-# You need to call save() after this function.
-# The save() function may save much more tags than the ones used by this class.
+# The change will be saved to disk and reloaded.
 #
 sub copy_tags_from_file
 {
@@ -342,12 +341,13 @@ sub copy_tags_from_file
     # Check validty of $from_file
     _new_exif_tool($from_file) or return 0;
 
+    # Reset loaded tags
+    $self->_read_exif_tags();
+
     $self->{exif_tools}->SetNewValue('*') if ($erase_all);
     $self->{exif_tools}->SetNewValuesFromFile($from_file, '*:*');
 
-    $self->_read_exif_tags();
-
-    return 1;
+    return ($self->save() != TAG_FAILURE)? 1 : 0;
 }
 
 
