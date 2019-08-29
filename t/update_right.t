@@ -24,8 +24,6 @@ if ($^O eq 'MSWin32') {
     exit 0;
 }
 
-fail("****** TEST HAS TO BE VALIDATES ON LINUX ************");
-
 # Check update rights to 0777
 chmod(0777, $tmp_file);
 $fileperm = (stat($tmp_file))[2] & 07777;

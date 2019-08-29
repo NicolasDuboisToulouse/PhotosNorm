@@ -317,6 +317,10 @@ sub update_access_rights
     my $fileperm = $self->{exif_tools}->GetValue('File:FilePermissions', 'Raw') & 07777;
     return 2 if ($fileperm == 0644);
     chmod(0644, $self->{file});
+
+    # Update internal data
+    $self->{exif_tools}->ExtractInfo($self->{file});
+
     return 1;
 }
 
