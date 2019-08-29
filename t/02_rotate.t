@@ -55,7 +55,7 @@ unlink($tmp_file);
     ok(1 == $tags->auto_rotate(), $test_name . ' 1');
 
 
-    # Check all tags are Ok    
+    # Check all tags are Ok
     ok($tags->{exif_tools}->GetValue('EXIF:ExifImageWidth')                 eq 20 &&
        $tags->{exif_tools}->GetValue('EXIF:ExifImageHeight')                eq 10 &&
        $tags->{exif_tools}->GetValue('EXIF:DateTimeOriginal')               eq '2019:01:01 00:00:00' &&

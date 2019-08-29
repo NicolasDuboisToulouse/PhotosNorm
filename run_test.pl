@@ -24,14 +24,14 @@ while (my $arg = shift(@ARGV))
         next;
     }
     elsif($arg =~ /^-/) {
-        die "Unkwown option '$arg'!\n";        
+        die "Unkwown option '$arg'!\n";
     }
-    
+
     push(@tests, $arg);
 }
 
 
 @tests = grep(-f, <t/*.t>) if ($#tests lt 0);
-    
+
 
 Test::Harness::runtests(@tests);
