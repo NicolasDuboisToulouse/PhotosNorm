@@ -6,6 +6,6 @@ Theses scripts are design to be cross-platform (Linux, Windows. Not tested on Ma
 
 ## Dependencies
 You need a standard perl setup ([Strawberry Perl](http://strawberryperl.com) on Windows) and some extra modules that can be installed with cpan tool:
-* [Prima](https://metacpan.org/pod/Prima) (cross-platform GUI. Needed only by 'gui' scripts)
+* [WxPerl](https://metacpan.org/pod/Wx) (cross-platform GUI. Needed only by 'gui' scripts)
 * [Image::ExifTool](https://metacpan.org/pod/Image::ExifTool)
 * [Image::JpegTran](https://metacpan.org/pod/Image::JpegTran)
