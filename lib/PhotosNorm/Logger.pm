@@ -9,6 +9,7 @@ use warnings;
 
 sub new
 {
+    $|=1;
     return bless({}, $_[0]);
 }
 
