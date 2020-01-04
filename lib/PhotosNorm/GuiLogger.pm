@@ -41,6 +41,8 @@ sub new
     my ($class, $title) = @_;
     my $self = $class->SUPER::new();
 
+    $self->{title} = $title;
+
     $self->{frame} = PhotosNorm::GuiLoggerFrame->new($title);
     $self->{frame}->Show(1);
     $self->SetTopWindow($self->{frame});
@@ -56,6 +58,12 @@ sub run
     my($self, $callback_fun, @callback_args) = @_;
     $self->{frame}->run($callback_fun, @callback_args);
     $self->{frame}->ShowModal();
+}
+
+sub msg
+{
+    my($self, $text) = @_;
+    Wx::MessageBox($text, $self->{title});
 }
 
 

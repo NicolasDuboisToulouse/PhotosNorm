@@ -14,6 +14,17 @@ use PhotosNorm::ImageTag;
 use File::Basename;
 use MIME::Types;
 
+sub help
+{
+    return << 'END_HELP';
+  Make some basic correction on picture(s) if needed:
+  * Access rights (Unix-only)
+  * Exif tags Width and Height (They shall match the real image dimensions)
+  * Exif tags DateTimeOriginal and CreateDate (Some camera use CreateDate)
+  * Rotation of the image according to Exif Orientation (jpeg-only)
+END_HELP
+
+}
 
 # $logger: @see PhotosNorm::Logger or PhotosNorm::GuiLogger
 # @files: either a list of file or one (and only one) directory

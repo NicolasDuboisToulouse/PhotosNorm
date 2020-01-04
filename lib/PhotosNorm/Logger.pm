@@ -25,4 +25,10 @@ sub lognl
     $self->log($text . "\n");
 }
 
+sub msg
+{
+    my($self, $text) = @_;
+    print $text . "\n";
+}
+
 1;

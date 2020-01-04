@@ -9,15 +9,17 @@ BEGIN {
 
 use strict;
 use warnings;
-use PhotosNorm::Logger;
+use PhotosNorm::GuiLogger;
 use PhotosNorm::BasicFix;
 use PhotosNorm::Main;
 
-my $logger = PhotosNorm::Logger->new();
+my $title = "Photo Basic Fix";
+
+my $logger = PhotosNorm::GuiLogger->new($title);
 
 PhotosNorm::Main::parse_args($logger, PhotosNorm::BasicFix::help(), @ARGV);
 
-PhotosNorm::BasicFix::fix($logger, @PhotosNorm::Main::files);
+$logger->run(\&PhotosNorm::BasicFix::fix, @PhotosNorm::Main::files);
 
 
 1;
