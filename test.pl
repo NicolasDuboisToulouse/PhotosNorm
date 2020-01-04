@@ -8,6 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 use PhotosNorm::GuiLogger;
+#use PhotosNorm::Logger;
 
 $|=1;
 
@@ -25,11 +26,9 @@ sub test_log
 
 
 
-print "BEGIN\n";
 
 my $logger = PhotosNorm::GuiLogger->new("The logger");
-
-print "MAIN\n";
 $logger->run(\&test_log, "Hello", "All", "World");
 
-print "END\n";
+# my $logger = PhotosNorm::Logger->new();
+# test_log($logger, "Hello", "All", "World");

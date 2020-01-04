@@ -159,11 +159,15 @@ sub workMain
 # logger class
 # -----------------------------------------------------------------------------
 package PhotosNorm::GuiLoggerFrame::logger;
+use base "PhotosNorm::Logger";
+
 
 sub new
 {
-    my ($pkg, $handler) = @_;
-    my $self = bless( { handler => $handler }, $pkg );
+    my ($class, $handler) = @_;
+    my $self = $class->SUPER::new();
+    $self->{handler} = $handler;
+    return $self;
 }
 
 sub log
@@ -171,12 +175,6 @@ sub log
     my($self, $text) = @_;
     my $write_event = Wx::PlThreadEvent->new(-1, $work_write_event, $text);
     Wx::PostEvent($self->{handler}, $write_event);
-}
-
-sub lognl
-{
-    my($self, $text) = @_;
-    $self->log($text . "\n");
 }
 
 1;
