@@ -55,7 +55,7 @@ sub run
 {
     my($self, $callback_fun, @callback_args) = @_;
     $self->{frame}->run($callback_fun, @callback_args);
-    $self->MainLoop();
+    $self->{frame}->ShowModal();
 }
 
 
@@ -64,9 +64,9 @@ sub run
 # Single wx-frame class
 # -----------------------------------------------------------------------------
 package PhotosNorm::GuiLoggerFrame;
-use base 'Wx::Frame';
+use base 'Wx::Dialog';
 
-use Wx qw(wxTE_MULTILINE wxVERTICAL wxID_DEFAULT wxEXPAND wxALL wxALIGN_RIGHT);
+use Wx qw(wxTE_MULTILINE wxVERTICAL wxID_DEFAULT wxEXPAND wxALL wxALIGN_RIGHT wxDEFAULT_DIALOG_STYLE wxRESIZE_BORDER);
 use Wx::Event qw(EVT_COMMAND EVT_CLOSE EVT_BUTTON);
 
 my $work_done_event : shared = Wx::NewEventType;
@@ -74,9 +74,10 @@ my $work_write_event : shared = Wx::NewEventType;
 
 sub new {
     my ($class, $title) = @_;
-    my $self = $class->SUPER::new(undef, -1, $title, [-1,-1], [800, 500]);
+    my $self = $class->SUPER::new(undef, -1, $title, [-1,-1], [800, 500], wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
     $self->{text_ctrl} = Wx::TextCtrl->new($self, -1, "", [-1,-1], [300, 300], wxTE_MULTILINE);
     $self->{button_close} = Wx::Button->new($self, -1, "&Close");
+    $self->SetIcon(Wx::GetWxPerlIcon());
 
     my $sizer = Wx::BoxSizer->new(wxVERTICAL);
     $sizer->Add($self->{text_ctrl}, 1, wxEXPAND);
@@ -121,6 +122,7 @@ sub onWorkDone
     }
     $self->{button_close}->Enable(1);
     $self->{button_close}->SetFocus();
+    $self->{button_close}->SetDefault();
 }
 
 sub onButtonClose
