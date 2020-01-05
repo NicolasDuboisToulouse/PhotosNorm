@@ -44,7 +44,6 @@ sub new
     $self->{title} = $title;
 
     $self->{frame} = PhotosNorm::GuiLoggerFrame->new($title);
-    $self->{frame}->Show(1);
     $self->SetTopWindow($self->{frame});
     $self->{frame}->CentreOnScreen();
     return $self;
