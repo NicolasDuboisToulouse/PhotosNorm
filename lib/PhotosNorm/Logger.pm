@@ -22,7 +22,7 @@ sub log
 sub lognl
 {
     my($self, $text) = @_;
-    $self->log($text . "\n");
+    $self->log(($text || '') . "\n");
 }
 
 sub msg

@@ -30,7 +30,7 @@ sub new
     $self->SetIcon(Wx::GetWxPerlIcon());
 
     $self->{logger} = $logger;
-    $self->{files} = @files;
+    $self->{files} = [ @files ];
 
     my $sizer = Wx::BoxSizer->new(wxVERTICAL);
 
@@ -46,7 +46,7 @@ sub new
     $sizer->Add($static_box_sizer, 0, wxALL | wxEXPAND, 10);
 
     my $button_basic_fix = Wx::Button->new($self, -1, "&Quick Fix...");
-    EVT_BUTTON($self, $button_basic_fix, \&notYetImplemented);
+    EVT_BUTTON($self, $button_basic_fix, \&onBasicFix);
     $sizer->Add($button_basic_fix, 0, wxALL | wxEXPAND | wxALIGN_CENTER, 10);
 
     my $button_edit = Wx::Button->new($self, -1, "&Edit metadata...");
@@ -77,6 +77,13 @@ sub onButtonClose {
 sub notYetImplemented {
     my ($self) = @_;
     $self->{logger}->msg("Not yet Implemented !");
+}
+
+sub onBasicFix {
+    my ($self) = @_;
+    $self->{logger}->lognl("Basic Fix images:");
+    $self->{logger}->run(\&PhotosNorm::BasicFix::fix, @{$self->{files}});
+    $self->{logger}->lognl();
 }
 
 
